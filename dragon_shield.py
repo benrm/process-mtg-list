@@ -25,14 +25,14 @@ language_codes = {
     'Phyrexian': 'ph'
 }
 
-def load_inventory(csvinfile, skipped_output, separator=True, header=True):
+def load_inventory(csvinfile, separator=True, header=True):
     inventory = []
+    skipped = []
     if separator:
         csvinfile.readline()
     if header:
         csvinfile.readline()
     rows = csv.reader(csvinfile)
-    skipped_output_csv = csv.writer(skipped_output)
     for row in rows:
         try:
             entry = {
@@ -56,20 +56,19 @@ def load_inventory(csvinfile, skipped_output, separator=True, header=True):
             inventory.append(entry)
         except Exception as e:
             row.append(str(e))
-            skipped_output_csv.writerow(row)
-    return inventory
+            skipped.append(row)
+    return inventory, skipped
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description = 'Process a Dragon Shield CSV file'
     )
     parser.add_argument('--input', '-i', type=argparse.FileType('r'))
-    parser.add_argument('--skipped-output', default=sys.stderr, type=argparse.FileType('w'))
     parser.add_argument('--output', '-o', default=sys.stdout, type=argparse.FileType('w'))
     parser.add_argument('--no-header', default=False, action='store_true')
     parser.add_argument('--no-separator-line', default=False, action='store_true')
     args = parser.parse_args()
 
-    inventory = load_inventory(args.input, args.skipped_output, not args.no_header, not args.no_separator_line)
+    inventory, skipped = load_inventory(args.input, not args.no_header, not args.no_separator_line)
 
-    print(json.dumps(inventory), file=args.output)
+    print(json.dumps({'inventory': inventory, 'skipped': skipped}), file=args.output)
